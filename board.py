@@ -2,7 +2,14 @@ import copy
 import itertools
 import sys
 
-from ai import ResolveMovesKing, ResolveMovesKnight, ResolveMovesQueen, ResolveMovesBishop, ResolveMovesPawn, ResolveMovesRook
+from ai import (
+    ResolveMovesKing,
+    ResolveMovesKnight,
+    ResolveMovesQueen,
+    ResolveMovesBishop,
+    ResolveMovesPawn,
+    ResolveMovesRook,
+)
 import math
 import time
 import random
@@ -12,7 +19,8 @@ import pygame as p
 from pieces import Pawn, Knight, King, Rook, Queen, Bishop
 from ai import AI
 
-class Board():
+
+class Board:
     settings_width = 200
     entities = []
     turn = False
@@ -22,19 +30,15 @@ class Board():
     sq_size = 60
     piece_lookup = {}
     selected = None
+    valid_moves = []
 
     check = False
     ai_thinking = False
-
-
-
 
     white_turn = True
     white_captured = []
     white_moves = {}
     whiteKing_Location = ()
-
-
 
     black_moves = {}
     black_captured = []
@@ -43,26 +47,20 @@ class Board():
     def __init__(self, pyg, screen):
         self.pygame = pyg
         self.screen = screen
-        self.setting_font = self.pygame.font.SysFont('Times New Roman', 25)
-        self.message_font = self.pygame.font.SysFont('Times New Roman', 15)
-
-        # Generate random back ranks for white and black
-        white_back_pieces = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-        random.shuffle(white_back_pieces)
-        white_back_rank = [f'w{p}' for p in white_back_pieces]
-
-        black_back_pieces = white_back_pieces
-        black_back_rank = [f'b{p}' for p in black_back_pieces]
+        self.entities = []
+        self.piece_lookup = {}
+        self.setting_font = self.pygame.font.SysFont("Times New Roman", 25)
+        self.message_font = self.pygame.font.SysFont("Times New Roman", 15)
 
         self.board = [
-            white_back_rank,
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
             ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
             ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
             ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
-            black_back_rank
+            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
         ]
 
         """
@@ -71,43 +69,32 @@ class Board():
         good board for testing checkmate
         
         
-        
-        
-        
-        self.board = [["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["bR", "bR", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "wK", "  ", "  ", "  ", "  ", "  "]]
-        self.board = [["wR", "  ", "wB", "wQ", "wK", "wB", "wN", "wR"],
-                      ["wp", "wp", "wp", "wp", "  ", "wp", "wp", "wp"],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "wN", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["bp", "bp", "  ", "  ", "bp", "bp", "bp", "bp"],
-                      ["bR", "bN", "bB", "  ", "bK", "bB", "bN", "bR"]]
-        
-        self.board = [["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["wR", "wR", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
-                      ["  ", "  ", "bK", "  ", "  ", "  ", "  ", "  "]]
+        self.board = [
+    ["bR","bN","bB","bQ","bK","bB","bN","bR"],
+    ["bp","bp","bp","bp","bp","bp","bp","bp"],
+    ["  ","  ","  ","  ","  ","  ","  ","  "],
+    ["  ","  ","  ","  ","  ","  ","  ","  "],
+    ["  ","  ","  ","  ","  ","  ","  ","  "],
+    ["  ","  ","  ","  ","  ","  ","  ","  "],
+    ["wp","wp","wp","wp","wp","wp","wp","wp"],
+    ["wR","wN","wB","wQ","wK","wB","wN","wR"],
+        ]
         
         """
 
         self.ai = AI(self, difficulty="medium")
-        self.text_location = (self.screen.get_width() - self.settings_width + 15, self.screen.get_height() - 150)
-        self.loading_texts = ["AI is thinking", "AI is thinking.", "AI is thinking..", "AI is thinking...", "AI is thinking...."]
+        self.text_location = (
+            self.screen.get_width() - self.settings_width + 15,
+            self.screen.get_height() - 150,
+        )
+        self.loading_texts = [
+            "AI is thinking",
+            "AI is thinking.",
+            "AI is thinking..",
+            "AI is thinking...",
+            "AI is thinking....",
+        ]
         self.loading_texts_index = 0
-
-
 
         # Spawn piece entities
         for i in range(8):
@@ -144,13 +131,13 @@ class Board():
 
         self.checkGameState()
 
-
     """
     AI CONTROL WRAPPERS
     
     
     Need to add the Game Over check again
     """
+
     def AI_MakeMove(self):
 
         while True:
@@ -164,12 +151,6 @@ class Board():
             else:
                 print(piece.pos, "->", move, piece.type)
 
-
-
-
-
-
-
     """
     GAME STATE FUNCTIONS
     """
@@ -177,10 +158,9 @@ class Board():
     def setAIThinking(self):
         self.ai_thinking = not self.ai_thinking
 
-
     def SimMovePiece(self, board, src, src_val, tgt, tgt_val):
-        y,x = tgt
-        sy,sx = src
+        y, x = tgt
+        sy, sx = src
         board[y][x] = tgt_val
         board[sy][sx] = src_val
 
@@ -208,12 +188,6 @@ class Board():
             else:
                 self.white_moves[e.pos] = e.getMoves()
 
-
-
-
-
-
-
     """
 
        checkMoveFilter() will do the following:
@@ -223,7 +197,9 @@ class Board():
 
        """
 
-    def checkMoveFilter(self, board, curr_team, currMoves, enemy_team, enemyMoves, king_loc):
+    def checkMoveFilter(
+        self, board, curr_team, currMoves, enemy_team, enemyMoves, king_loc
+    ):
         keys = list(currMoves.keys())
         old_king_loc = copy.deepcopy(king_loc)
         for src in keys:
@@ -237,7 +213,9 @@ class Board():
                     # print("found")
                     king_loc = move
                 self.SimMovePiece(board, src, "  ", move, src_val)
-                m_dict, next_turnEnemyMoves = self.ai.getMoves(board, enemy_team, beam_search=False)
+                m_dict, next_turnEnemyMoves = self.ai.getMoves(
+                    board, enemy_team, beam_search=False
+                )
                 if king_loc in next_turnEnemyMoves:
                     currMoves[src].remove(move)
                 king_loc = old_king_loc
@@ -245,15 +223,18 @@ class Board():
             if len(currMoves[src]) == 0:
                 currMoves.pop(src)
 
-
     def checkGameState(self):
         self.getValidMoves()
         board = copy.deepcopy(self.board)
         black_moves, black_moves_list = self.ai.getMoves(board, "b", beam_search=False)
         board = copy.deepcopy(self.board)
         white_moves, white_moves_list = self.ai.getMoves(board, "w", beam_search=False)
-        self.checkMoveFilter(board, "w", white_moves, "b", black_moves_list, self.whiteKing_Location)
-        self.checkMoveFilter(board, "b", black_moves, "w", white_moves_list, self.blackKing_Location)
+        self.checkMoveFilter(
+            board, "w", white_moves, "b", black_moves_list, self.whiteKing_Location
+        )
+        self.checkMoveFilter(
+            board, "b", black_moves, "w", white_moves_list, self.blackKing_Location
+        )
         self.white_moves = white_moves
         self.black_moves = black_moves
         return len(self.black_moves) == 0 or len(self.white_moves) == 0
@@ -275,40 +256,67 @@ class Board():
         x, y = pos
         y = int((y - (y % self.sq_size)) / self.sq_size)
         x = int((x - (x % self.sq_size)) / self.sq_size)
+
         if self.selected is None:
             if (y, x) in self.piece_lookup:
                 self.selected = (y, x)
+                piece = self.piece_lookup[(y, x)]
+                self.valid_moves = piece.getMoves()
+
         else:
             piece = self.piece_lookup[self.selected]
-            if self.white_turn or piece.team == "w":
+
+            if piece.team != ("w" if self.white_turn else "b"):
                 self.selected = None
+                self.valid_moves = []
                 return
+
             self.checkGameOver()
+
             if piece.move((y, x)):
                 self.white_turn = not self.white_turn
                 self.checkGameOver()
+
             self.selected = None
+            self.valid_moves = []
 
     """
     Graphics/Draw Functions
     """
+
     def drawAccessoryTexts(self):
         if self.ai_thinking:
-            load_text = self.message_font.render(self.loading_texts[self.loading_texts_index], False, (0,0,0))
+            load_text = self.message_font.render(
+                self.loading_texts[self.loading_texts_index], False, (0, 0, 0)
+            )
             self.loading_texts_index += 1
             self.loading_texts_index %= 4
             self.screen.blit(load_text, self.text_location)
 
     def drawSelected(self):
+        # 🟡 selected square
         if self.selected:
-            y,x = self.selected
-            y *= self.sq_size
-            x *= self.sq_size
-            selection_surface = self.pygame.Surface((self.sq_size, self.sq_size), self.pygame.SRCALPHA)
+            y, x = self.selected
+            y_pix = y * self.sq_size
+            x_pix = x * self.sq_size
+
+            selection_surface = self.pygame.Surface(
+                (self.sq_size, self.sq_size), self.pygame.SRCALPHA
+            )
             selection_surface.fill(self.select_c3)
-            self.screen.blit(selection_surface, (x,y))
+            self.screen.blit(selection_surface, (x_pix, y_pix))
 
+        # 🟢 valid moves
+        for move in self.valid_moves:
+            y, x = move
+            y_pix = y * self.sq_size
+            x_pix = x * self.sq_size
 
+            move_surface = self.pygame.Surface(
+                (self.sq_size, self.sq_size), self.pygame.SRCALPHA
+            )
+            move_surface.fill((0, 255, 0, 100))
+            self.screen.blit(move_surface, (x_pix, y_pix))
 
     def draw_Board(self):
         for i in range(8):
@@ -325,10 +333,13 @@ class Board():
 
     def drawSettings(self):
         offset_x = self.sq_size * 8
-        self.pygame.draw.rect(self.screen, self.pygame.Color("gray"),
-                              self.pygame.Rect(offset_x, 0, self.settings_width, self.sq_size * 8))
-        white_pt_label = self.setting_font.render('White:', False, (0, 0, 0))
-        black_pt_label = self.setting_font.render('Black:', False, (0, 0, 0))
+        self.pygame.draw.rect(
+            self.screen,
+            self.pygame.Color("gray"),
+            self.pygame.Rect(offset_x, 0, self.settings_width, self.sq_size * 8),
+        )
+        white_pt_label = self.setting_font.render("White:", False, (0, 0, 0))
+        black_pt_label = self.setting_font.render("Black:", False, (0, 0, 0))
         self.screen.blit(white_pt_label, (offset_x + 10, (self.sq_size * 8) / 8))
         self.screen.blit(black_pt_label, (offset_x + 10, ((self.sq_size * 8) / 6) * 3))
 

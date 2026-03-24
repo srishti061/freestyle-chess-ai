@@ -4,8 +4,8 @@ from board import Board
 import threading
 import pygame as p
 
-BOARD_WIDTH = 60*8 + 200
-BOARD_HEIGHT = 60*8
+BOARD_WIDTH = 60 * 8 + 200
+BOARD_HEIGHT = 60 * 8
 
 p.init()
 screen = p.display.set_mode((BOARD_WIDTH, BOARD_HEIGHT))
@@ -26,10 +26,6 @@ def ai_moveThread():
             AI_THINKING_LOCK.release()
 
 
-
-
-
-
 def GameLoop():
     b.draw_Board()
     ai_moveThread()
@@ -43,7 +39,6 @@ def GameLoop():
 
     clock.tick(15)
     p.display.flip()
-
 
 
 while True:

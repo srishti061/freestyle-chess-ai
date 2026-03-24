@@ -7,7 +7,9 @@ import time
 import mmh3
 import numpy as np
 import pygame as p
-#import ml 
+
+
+# import ml
 def MoveEvalFunc(board, move, score_dict, enemy_moves, pos):
     y, x = move
     score = 0
@@ -16,8 +18,8 @@ def MoveEvalFunc(board, move, score_dict, enemy_moves, pos):
     y1, x1 = pos
     piece = board[y1][x1]
     if move in enemy_moves:
-       score -= score_dict[piece[1]]
-    #score += (0.1) / (100 + abs(y - 4) + score_dict[piece[1]])  # middle board control heuristic -> makes AI more aggressive
+        score -= score_dict[piece[1]]
+    # score += (0.1) / (100 + abs(y - 4) + score_dict[piece[1]])  # middle board control heuristic -> makes AI more aggressive
     if type == " ":
         return score
     return score_dict[type] + score
@@ -25,7 +27,10 @@ def MoveEvalFunc(board, move, score_dict, enemy_moves, pos):
 
 def OrderMoves(available_moves, board, score_dict, enemy_moves, pos):
     if len(available_moves):
-        available_moves.sort(key=lambda x: MoveEvalFunc(board, x, score_dict, enemy_moves, pos), reverse=True)
+        available_moves.sort(
+            key=lambda x: MoveEvalFunc(board, x, score_dict, enemy_moves, pos),
+            reverse=True,
+        )
         return available_moves
     return []
 
@@ -36,24 +41,29 @@ def DictEval(board, move, score_dict):
     return score_dict[type]
 
 
-'''
+"""
 Hash the list of tuples --> MurmurHash is supposedly the fastest hash in python because it is non cryptographic
 
 It is not a secure hash function, but should be sufficient for our purposes
-'''
+"""
+
 
 def HashBoard(board):
     tuples = [tuple(inner_list) for inner_list in board]
     combined_hash = mmh3.hash128(repr(tuples), seed=0)
     return combined_hash
 
-'''
+
+"""
 Use this 
-'''
+"""
+
+
 def OrderDict(board, moves_dict, score_dict):
-    m_list = [k for k,v in moves_dict.items()]
+    m_list = [k for k, v in moves_dict.items()]
     m_list.sort(key=lambda move: DictEval(board, move, score_dict))
     moves_dict = {m: moves_dict[m] for m in m_list}
+
 
 def ResolveMovesPawn(board, pos):
     y, x = pos
@@ -83,10 +93,18 @@ def ResolveMovesPawn(board, pos):
         x, y = d
         n = pos[1] + x
         m = pos[0] + y
-        if m < 8 and n < 8 and m >= 0 and n >= 0 and board[m][n][0] != team and board[m][n] != "  ":
+        if (
+            m < 8
+            and n < 8
+            and m >= 0
+            and n >= 0
+            and board[m][n][0] != team
+            and board[m][n] != "  "
+        ):
             available_moves.append((m, n))
 
     return available_moves
+
 
 def ResolveMovesRook(board, pos):
     dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
@@ -106,6 +124,7 @@ def ResolveMovesRook(board, pos):
                 available_moves.append((m, n))
     return available_moves
 
+
 def ResolveMovesKnight(board, pos):
     y, x = pos
     team = board[y][x][0]
@@ -115,9 +134,16 @@ def ResolveMovesKnight(board, pos):
         x, y = d
         n = pos[1] + x
         m = pos[0] + y
-        if m < 8 and n < 8 and m >= 0 and n >= 0 and (board[m][n] == "  " or board[m][n][0] != team):
+        if (
+            m < 8
+            and n < 8
+            and m >= 0
+            and n >= 0
+            and (board[m][n] == "  " or board[m][n][0] != team)
+        ):
             available_moves.append((m, n))
     return available_moves
+
 
 def ResolveMovesBishop(board, pos):
     y, x = pos
@@ -138,6 +164,7 @@ def ResolveMovesBishop(board, pos):
                 available_moves.append((m, n))
     return available_moves
 
+
 def ResolveMovesQueen(board, pos):
     y, x = pos
     team = board[y][x][0]
@@ -156,6 +183,7 @@ def ResolveMovesQueen(board, pos):
                 available_moves.append((m, n))
     return available_moves
 
+
 def ResolveMovesKing(board, pos, f=False):
     y, x = pos
     team = board[y][x][0]
@@ -165,68 +193,78 @@ def ResolveMovesKing(board, pos, f=False):
         x, y = d
         n = pos[1] + x
         m = pos[0] + y
-        if m < 8 and n < 8 and m >= 0 and n >= 0 and (board[m][n] == "  " or board[m][n][0] != team):
+        if (
+            m < 8
+            and n < 8
+            and m >= 0
+            and n >= 0
+            and (board[m][n] == "  " or board[m][n][0] != team)
+        ):
             available_moves.append((m, n))
     return available_moves
 
-class AI():
+
+class AI:
     def __init__(self, board, difficulty="medium", team="w"):
-    self.board = board
-    self.strategy = 1
+        self.board = board
+        self.strategy = 1
 
-    # 🎯 Difficulty settings
-    if difficulty == "easy":
-        self.ABSearch_Depth = 2
-        self.randomness = 0.3
-    elif difficulty == "medium":
-        self.ABSearch_Depth = 4
-        self.randomness = 0.1
-    else:  # hard
-        self.ABSearch_Depth = 6
-        self.randomness = 0.0
+        # 🎯 Difficulty settings
+        if difficulty == "easy":
+            self.ABSearch_Depth = 2
+            self.randomness = 0.3
+        elif difficulty == "medium":
+            self.ABSearch_Depth = 4
+            self.randomness = 0.1
+        else:  # hard
+            self.ABSearch_Depth = 6
+            self.randomness = 0.0
 
-    self.maximizer_team = team
-    self.minimizer_team = "b" if team == "w" else "w"
+        self.maximizer_team = team
+        self.minimizer_team = "b" if team == "w" else "w"
 
-    self.chosen_move = ()
-    self.thread_lock = threading.Lock()
-    self.ab_lock = threading.Lock()
-    self.tt_lock = threading.Lock()
+        self.chosen_move = ()
+        self.thread_lock = threading.Lock()
+        self.ab_lock = threading.Lock()
+        self.tt_lock = threading.Lock()
 
-    self.best_SearchTreeMoves = []
-    self.transposition_table = {}
-    self.transpositions = 0
-    self.explored_nodes = 0
+        self.best_SearchTreeMoves = []
+        self.transposition_table = {}
+        self.transpositions = 0
+        self.explored_nodes = 0
+        self.pruned = 0
 
-    self.depth_beta = {i: 99999 for i in range(12)}
-    self.depth_betac = {i: 99999 for i in range(12)}
-    self.depth_alpha = {i: -99999 for i in range(12)}
-    self.depth_alphac = {i: -99999 for i in range(12)}
+        self.depth_beta = {i: 99999 for i in range(12)}
+        self.depth_betac = {i: 99999 for i in range(12)}
+        self.depth_alpha = {i: -99999 for i in range(12)}
+        self.depth_alphac = {i: -99999 for i in range(12)}
 
-    # piece values
-    self.king_val = 10
-    self.queen_val = 8
-    self.rook_val = 5
-    self.bishop_val = 5
-    self.knight_val = 3
-    self.pawn_val = 1
+        # piece values
+        self.king_val = 10
+        self.queen_val = 8
+        self.rook_val = 5
+        self.bishop_val = 5
+        self.knight_val = 3
+        self.pawn_val = 1
 
-    self.scoreDict = {
-        "K": self.king_val,
-        "N": self.knight_val,
-        "p": self.pawn_val,
-        "R": self.rook_val,
-        "Q": self.queen_val,
-        "B": self.bishop_val,
-        " ": 0
-    }
+        self.scoreDict = {
+            "K": self.king_val,
+            "N": self.knight_val,
+            "p": self.pawn_val,
+            "R": self.rook_val,
+            "Q": self.queen_val,
+            "B": self.bishop_val,
+            " ": 0,
+        }
+
     """
     Move retrieval and Evaluation Functions
     
     NOTE: Beam Search is implemented within ResolveMoves()
     """
+
     def ResolveMoves(self, board, pos, enemy_moves, beam_search=True):
-        y,x = pos
+        y, x = pos
         team = board[y][x][0]
         enemy_team = ""
         if team == "w":
@@ -237,17 +275,53 @@ class AI():
 
         if beam_search:
             if type == "p":
-                return OrderMoves(ResolveMovesPawn(board, pos), board, self.scoreDict, enemy_moves, pos)#[0:1]
+                return OrderMoves(
+                    ResolveMovesPawn(board, pos),
+                    board,
+                    self.scoreDict,
+                    enemy_moves,
+                    pos,
+                )  # [0:1]
             elif type == "R":
-                return OrderMoves(ResolveMovesRook(board, pos), board, self.scoreDict,enemy_moves, pos)#[0:3]
+                return OrderMoves(
+                    ResolveMovesRook(board, pos),
+                    board,
+                    self.scoreDict,
+                    enemy_moves,
+                    pos,
+                )  # [0:3]
             elif type == "N":
-                return OrderMoves(ResolveMovesKnight(board, pos), board, self.scoreDict, enemy_moves, pos)#[0:2]
+                return OrderMoves(
+                    ResolveMovesKnight(board, pos),
+                    board,
+                    self.scoreDict,
+                    enemy_moves,
+                    pos,
+                )  # [0:2]
             elif type == "B":
-                return OrderMoves(ResolveMovesBishop(board, pos), board, self.scoreDict, enemy_moves, pos)#[0:3]
+                return OrderMoves(
+                    ResolveMovesBishop(board, pos),
+                    board,
+                    self.scoreDict,
+                    enemy_moves,
+                    pos,
+                )  # [0:3]
             elif type == "Q":
-                return OrderMoves(ResolveMovesQueen(board, pos), board, self.scoreDict, enemy_moves, pos)#[0:3]
+                return OrderMoves(
+                    ResolveMovesQueen(board, pos),
+                    board,
+                    self.scoreDict,
+                    enemy_moves,
+                    pos,
+                )  # [0:3]
             elif type == "K":
-                m = OrderMoves(ResolveMovesKing(board, pos), board, self.scoreDict, enemy_moves, pos)#[0:5]
+                m = OrderMoves(
+                    ResolveMovesKing(board, pos),
+                    board,
+                    self.scoreDict,
+                    enemy_moves,
+                    pos,
+                )  # [0:5]
                 return m
         else:
             if type == "p":
@@ -263,7 +337,6 @@ class AI():
             elif type == "K":
                 return ResolveMovesKing(board, pos)
 
-
     def getMoves(self, board, team, beam_search=True):
         moves_dict = {}
         moves_list = []
@@ -274,12 +347,13 @@ class AI():
             else:
                 _, e_moves = self.getMoves(board, "w", beam_search=False)
 
-
         for m in range(len(board)):
             for n in range(len(board[0])):
                 if board[m][n] != "  " and board[m][n][0] == team:
-                    moves = self.ResolveMoves(board, (m,n), e_moves, beam_search=beam_search)
-                    moves_dict[(m,n)] = moves
+                    moves = self.ResolveMoves(
+                        board, (m, n), e_moves, beam_search=beam_search
+                    )
+                    moves_dict[(m, n)] = moves
                     moves_list += moves
         if beam_search:
             OrderDict(board, moves_dict, self.scoreDict)
@@ -287,71 +361,65 @@ class AI():
         return moves_dict, moves_list
 
     def MakeMove(self):
-    import random
+        import random
 
-    # 🎲 Random move for easy mode
-    if random.random() < self.randomness:
-        moves_dict, moves_list = self.getMoves(self.board.board, self.maximizer_team)
-        if moves_list:
-            move = random.choice(moves_list)
-            for piece, moves in moves_dict.items():
-                if move in moves:
-                    return (piece, move)
+        if random.random() < self.randomness:
+            moves_dict, moves_list = self.getMoves(
+                self.board.board, self.maximizer_team
+            )
+            if moves_list:
+                move = random.choice(moves_list)
+                for piece, moves in moves_dict.items():
+                    if move in moves:
+                        return (piece, move)
 
-    return self.GameTreeSearch()
+        return self.GameTreeSearch()
 
     def SimMovePiece(self, board, src, src_val, tgt, tgt_val):
-        y,x = tgt
-        sy,sx = src
+        y, x = tgt
+        sy, sx = src
         board[y][x] = tgt_val
         board[sy][sx] = src_val
 
     """
     Heuristic Evaluation Functions
     """
-   
-   def evaluateBoard(self, board, checkmate, team):
-    if checkmate:
-        if team == self.maximizer_team:
-            return 100
-        else:
-            return -100
 
-    score = 0
+    def evaluateBoard(self, board, checkmate, team):
+        if checkmate:
+            if team == self.maximizer_team:
+                return 100
+            else:
+                return -100
 
-    for m in range(len(board)):
-        for n in range(len(board[0])):
-            if board[m][n] != '  ':
-                piece_team = board[m][n][0]
-                piece_type = board[m][n][1]
+        score = 0
 
-                # 🔹 Material score
-                if piece_team == self.minimizer_team:
-                    score -= self.getScore(board[m][n])
-                else:
-                    score += self.getScore(board[m][n])
+        for m in range(len(board)):
+            for n in range(len(board[0])):
+                if board[m][n] != "  ":
+                    piece_team = board[m][n][0]
 
-                # 🔹 Center control bonus
-                if 2 <= m <= 5 and 2 <= n <= 5:
-                    if piece_team == self.maximizer_team:
-                        score += 0.2
+                    if piece_team == self.minimizer_team:
+                        score -= self.getScore(board[m][n])
+                    else:
+                        score += self.getScore(board[m][n])
+
+                    if 2 <= m <= 5 and 2 <= n <= 5:
+                        if piece_team == self.maximizer_team:
+                            score += 0.2
                     else:
                         score -= 0.2
 
-    # 🔹 Mobility (number of moves)
-    my_moves = len(self.getMoves(board, self.maximizer_team)[1])
-    enemy_moves = len(self.getMoves(board, self.minimizer_team)[1])
+        return score
 
-    score += 0.05 * (my_moves - enemy_moves)
-
-    return score
-
-    def evaluateBoard1(board, checkmate, team, a: int, b: int):
+    def evaluateBoard1(self, board, checkmate, team, a: int, b: int):
         pass
-        #return evaluateBoard(board, checkmate, team)*0.2 + MLAI.predict_function(board) * 0.8
+        # return evaluateBoard(board, checkmate, team)*0.2 + MLAI.predict_function(board) * 0.8
+
     """
     Wrapper function for retrieving scores
     """
+
     def getScore(self, tgt):
         type = tgt[1]
         return self.scoreDict[type]
@@ -359,8 +427,9 @@ class AI():
     """
     Heuristic Alpha-Beta Minimax
     """
+
     def GameTreeSearch(self):
-        move = ((),())
+        move = ((), ())
         """
         This method is a variation of Heuristic Alpha-Beta Tree Search.
         Our variation of the algorithm includes:
@@ -379,27 +448,41 @@ class AI():
     """
     GetAB_Board is a helper/wrapper function that retrieves some info used in the heuristic search tree
     """
+
     def GetAB_Board(self):
         board = copy.deepcopy(self.board.board)
         return board, self.board.whiteKing_Location, self.board.blackKing_Location
-
 
     """
     This is a wrapper function that will format the result of the heuristic search into a format acceptable
     by the board.AI_MakeMove() function
     """
+
     def AB_Search(self, alpha, beta, depth, threaded=True):
         board, white_king_loc, black_king_loc = self.GetAB_Board()
         start_time = time.time()
         if threaded:
-            chosen_piece, chosen_move = self.ABSearch_Thread(board, white_king_loc, black_king_loc, [])
+            chosen_piece, chosen_move = self.ABSearch_Thread(
+                board, white_king_loc, black_king_loc, []
+            )
         else:
-            utility, chosen_piece, chosen_move = self.AB_Max(alpha, beta, board, depth, white_king_loc, black_king_loc, [])
+            utility, chosen_piece, chosen_move = self.AB_Max(
+                alpha, beta, board, depth, white_king_loc, black_king_loc, []
+            )
 
         end_time = time.time()
         elapsed_time = end_time - start_time
 
-        print("Elapsed time:", elapsed_time, "seconds", f"Total Pruned={self.pruned}", f"Transpositioned={self.transpositions}, Total Nodes Explored: {self.explored_nodes}")
+        if not hasattr(self, "pruned"):
+            self.pruned = 0
+
+        print(
+            "Elapsed time:",
+            elapsed_time,
+            "seconds",
+            f"Total Pruned={self.pruned}",
+            f"Transpositioned={self.transpositions}, Total Nodes Explored: {self.explored_nodes}",
+        )
         self.pruned = 0
         self.transpositions = 0
         self.explored_nodes = 0
@@ -411,7 +494,10 @@ class AI():
     2. If so, we test every one of our possible moves and see if it will get us out of check
     3. If it will we keep that move, if not we will discard it
     """
-    def checkMoveFilter(self, board, curr_team, currMoves, enemy_team, enemyMoves, king_loc):
+
+    def checkMoveFilter(
+        self, board, curr_team, currMoves, enemy_team, enemyMoves, king_loc
+    ):
         keys = list(currMoves.keys())
         if king_loc in enemyMoves:
             for src in keys:
@@ -425,24 +511,37 @@ class AI():
                     if (src_y, src_x) == king_loc:
                         king_loc = move
                     self.SimMovePiece(board, src, "  ", move, src_val)
-                    m_dict, next_turnEnemyMoves = self.getMoves(board, enemy_team, beam_search=False)
+                    m_dict, next_turnEnemyMoves = self.getMoves(
+                        board, enemy_team, beam_search=False
+                    )
                     if king_loc in next_turnEnemyMoves:
                         currMoves[src].remove(move)
                         if len(currMoves[src]) == 0:
                             currMoves.pop(src)
                     king_loc = old_king_loc
                     self.SimMovePiece(board, move, tgt_val, src, src_val)
-        #else:
-           # print("kings loc not in enemy moves")
+        # else:
+        # print("kings loc not in enemy moves")
 
-
-    '''
+    """
     This function is a multi-threaded implementation of beam search
-    '''
+    """
+
     def ABSearch_Thread(self, board, wk_Loc, bk_Loc, prev_movList):
-        moves_dict, moves_list = self.getMoves(board, self.maximizer_team, beam_search=True)
-        _, enemy_moves_list = self.getMoves(board, self.minimizer_team, beam_search=False)
-        self.checkMoveFilter(board, self.maximizer_team, moves_dict, self.minimizer_team, enemy_moves_list, wk_Loc)
+        moves_dict, moves_list = self.getMoves(
+            board, self.maximizer_team, beam_search=True
+        )
+        _, enemy_moves_list = self.getMoves(
+            board, self.minimizer_team, beam_search=False
+        )
+        self.checkMoveFilter(
+            board,
+            self.maximizer_team,
+            moves_dict,
+            self.minimizer_team,
+            enemy_moves_list,
+            wk_Loc,
+        )
         if len(moves_dict) == 0:
             return (self.evaluateBoard(board, True, self.minimizer_team), (), ())
         threads = []
@@ -450,17 +549,30 @@ class AI():
         i = 0
         move = {}
 
-
-        '''
+        """
         store moves and their corresponding indexes in this structure
         we will pass in the index as a tag that will get appended to self.best_SearchTreeMoves
         after we sort for the best utility in self.best_SearchTreeMoves, we use its tag to access the best move from move = {}
-        '''
+        """
         for piece in moves_dict:
             piece_val = board[piece[0]][piece[1]]
             new_board = copy.deepcopy(board)
             self.ab_lock.acquire()
-            ab_max_thread = threading.Thread(target=self.AB_Max, args=(-99999, 99999, new_board, 0, wk_Loc, bk_Loc, [], i, {piece: moves_dict[piece]}, True))
+            ab_max_thread = threading.Thread(
+                target=self.AB_Max,
+                args=(
+                    -99999,
+                    99999,
+                    new_board,
+                    0,
+                    wk_Loc,
+                    bk_Loc,
+                    [],
+                    i,
+                    {piece: moves_dict[piece]},
+                    True,
+                ),
+            )
             threads.append(ab_max_thread)
             ab_max_thread.start()
             self.ab_lock.release()
@@ -476,19 +588,37 @@ class AI():
         self.depth_beta = self.depth_betac
         return best[1], best[2]
 
-
-
     """
     Heuristic Search maximizer function
     """
-    def AB_Max(self, alpha, beta, board, depth, wk_Loc, bk_Loc, prev_movList, tag=None, piece_dict=None, threaded=False):
+
+    def AB_Max(
+        self,
+        alpha,
+        beta,
+        board,
+        depth,
+        wk_Loc,
+        bk_Loc,
+        prev_movList,
+        tag=None,
+        piece_dict=None,
+        threaded=False,
+    ):
         self.explored_nodes += 1
         if depth == self.ABSearch_Depth:
             return (self.evaluateBoard(board, False, self.maximizer_team), (), ())
         moves_dict, moves_list = self.getMoves(board, self.maximizer_team)
         if depth == 0 and threaded:
             moves_dict = piece_dict
-        self.checkMoveFilter(board, self.maximizer_team, moves_dict, self.minimizer_team, prev_movList, wk_Loc)
+        self.checkMoveFilter(
+            board,
+            self.maximizer_team,
+            moves_dict,
+            self.minimizer_team,
+            prev_movList,
+            wk_Loc,
+        )
         if len(moves_dict) == 0:
             return (self.evaluateBoard(board, True, self.minimizer_team), (), ())
         utility_max = -999999
@@ -504,13 +634,27 @@ class AI():
                 if piece == bk_Loc:
                     bk_Store = bk_Loc
                     bk_Loc = p
-                self.SimMovePiece(board=board, src=piece, src_val="  ", tgt=p, tgt_val=piece_val)
+                self.SimMovePiece(
+                    board=board, src=piece, src_val="  ", tgt=p, tgt_val=piece_val
+                )
                 board_hash = HashBoard(board)
-                if board_hash in self.transposition_table and (piece, p) in self.transposition_table[board_hash]:
+                if (
+                    board_hash in self.transposition_table
+                    and (piece, p) in self.transposition_table[board_hash]
+                ):
                     utility, cp, cm = self.transposition_table[board_hash][(piece, p)]
                     self.transpositions += 1
                 else:
-                    utility, cp, cm = self.AB_Min(alpha, beta, board, depth + 1, wk_Loc, bk_Loc, moves_dict, threaded=threaded)
+                    utility, cp, cm = self.AB_Min(
+                        alpha,
+                        beta,
+                        board,
+                        depth + 1,
+                        wk_Loc,
+                        bk_Loc,
+                        moves_dict,
+                        threaded=threaded,
+                    )
                     self.tt_lock.acquire()
                     if not board_hash in self.transposition_table:
                         self.transposition_table[board_hash] = {}
@@ -525,7 +669,9 @@ class AI():
                         chosen_move = p
                         chosen_piece = piece
                     if beta <= alpha:
-                        self.SimMovePiece(board, p, src_val=old_val, tgt=piece, tgt_val=piece_val)
+                        self.SimMovePiece(
+                            board, p, src_val=old_val, tgt=piece, tgt_val=piece_val
+                        )
                         break
                 else:
                     if utility > utility_max:
@@ -534,8 +680,14 @@ class AI():
                         chosen_piece = piece
                     self.ab_lock.acquire()
                     self.depth_alpha[depth] = max(self.depth_alpha[depth], alpha)
-                    if self.depth_beta[depth] <= alpha or self.depth_beta[depth] <= self.depth_alpha[depth] or alpha <= beta:
-                        self.SimMovePiece(board, p, src_val=old_val, tgt=piece, tgt_val=piece_val)
+                    if (
+                        self.depth_beta[depth] <= alpha
+                        or self.depth_beta[depth] <= self.depth_alpha[depth]
+                        or alpha <= beta
+                    ):
+                        self.SimMovePiece(
+                            board, p, src_val=old_val, tgt=piece, tgt_val=piece_val
+                        )
                         self.ab_lock.release()
                         self.pruned += 1
                         break
@@ -545,7 +697,9 @@ class AI():
                 if piece == bk_Store:
                     bk_Loc = bk_Store
 
-                self.SimMovePiece(board, p, src_val=old_val, tgt=piece, tgt_val=piece_val)
+                self.SimMovePiece(
+                    board, p, src_val=old_val, tgt=piece, tgt_val=piece_val
+                )
             if beta <= alpha:
                 break
 
@@ -558,12 +712,22 @@ class AI():
     """
     Heuristic Search minimizer function
     """
-    def AB_Min(self, alpha, beta, board, depth, wk_Loc, bk_Loc, prev_movList, threaded=False):
+
+    def AB_Min(
+        self, alpha, beta, board, depth, wk_Loc, bk_Loc, prev_movList, threaded=False
+    ):
         self.explored_nodes += 1
         if depth == self.ABSearch_Depth:
             return (self.evaluateBoard(board, False, self.minimizer_team), (), ())
         moves_dict, moves_list = self.getMoves(board, self.minimizer_team)
-        self.checkMoveFilter(board, self.minimizer_team, moves_dict, self.maximizer_team, prev_movList, bk_Loc)
+        self.checkMoveFilter(
+            board,
+            self.minimizer_team,
+            moves_dict,
+            self.maximizer_team,
+            prev_movList,
+            bk_Loc,
+        )
         if len(moves_dict) == 0:
             return (self.evaluateBoard(board, True, self.maximizer_team), (), ())
 
@@ -578,19 +742,32 @@ class AI():
                 if piece == wk_Loc:
                     wk_Store = wk_Loc
                     wk_Loc = p
-                self.SimMovePiece(board=board, src=piece, src_val="  ", tgt=p, tgt_val=piece_val)
+                self.SimMovePiece(
+                    board=board, src=piece, src_val="  ", tgt=p, tgt_val=piece_val
+                )
                 board_hash = HashBoard(board)
-                if board_hash in self.transposition_table and (piece, p) in self.transposition_table[board_hash]:
+                if (
+                    board_hash in self.transposition_table
+                    and (piece, p) in self.transposition_table[board_hash]
+                ):
                     utility, cp, cm = self.transposition_table[board_hash][(piece, p)]
                     self.transpositions += 1
                 else:
-                    utility, cp, cm = self.AB_Max(alpha, beta, board, depth + 1, wk_Loc, bk_Loc, moves_dict, threaded=threaded)
+                    utility, cp, cm = self.AB_Max(
+                        alpha,
+                        beta,
+                        board,
+                        depth + 1,
+                        wk_Loc,
+                        bk_Loc,
+                        moves_dict,
+                        threaded=threaded,
+                    )
                     if not board_hash in self.transposition_table:
                         self.transposition_table[board_hash] = {}
                     self.tt_lock.acquire()
                     self.transposition_table[board_hash][(piece, p)] = (utility, cp, cm)
                     self.tt_lock.release()
-
 
                 """ALPHA BETA PRUNING"""
                 beta = min(utility, beta)
@@ -600,7 +777,9 @@ class AI():
                         chosen_move = p
                         chosen_piece = piece
                     if beta <= alpha:
-                        self.SimMovePiece(board, p, src_val=old_val, tgt=piece, tgt_val=piece_val)
+                        self.SimMovePiece(
+                            board, p, src_val=old_val, tgt=piece, tgt_val=piece_val
+                        )
                         break
                 else:
                     if utility < utility_min:
@@ -609,8 +788,14 @@ class AI():
                         chosen_piece = piece
                     self.ab_lock.acquire()
                     self.depth_beta[depth] = min(self.depth_beta[depth], beta)
-                    if beta <= self.depth_alpha[depth] or self.depth_beta[depth] <= self.depth_alpha[depth] or alpha <= beta:
-                        self.SimMovePiece(board, p, src_val=old_val, tgt=piece, tgt_val=piece_val)
+                    if (
+                        beta <= self.depth_alpha[depth]
+                        or self.depth_beta[depth] <= self.depth_alpha[depth]
+                        or alpha <= beta
+                    ):
+                        self.SimMovePiece(
+                            board, p, src_val=old_val, tgt=piece, tgt_val=piece_val
+                        )
                         self.ab_lock.release()
                         self.pruned += 1
                         break
@@ -620,7 +805,9 @@ class AI():
                 if piece == wk_Store:
                     wk_Loc = wk_Store
 
-                self.SimMovePiece(board, p, src_val=old_val, tgt=piece, tgt_val=piece_val)
+                self.SimMovePiece(
+                    board, p, src_val=old_val, tgt=piece, tgt_val=piece_val
+                )
             if beta <= alpha:
                 break
         return utility_min, chosen_piece, chosen_move
