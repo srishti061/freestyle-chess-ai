@@ -322,6 +322,7 @@ class AI():
         return  score 
 
     def evaluateBoard1(board, checkmate, team, a: int, b: int):
+        pass
         #return evaluateBoard(board, checkmate, team)*0.2 + MLAI.predict_function(board) * 0.8
     """
     Wrapper function for retrieving scores
