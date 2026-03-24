@@ -170,57 +170,56 @@ def ResolveMovesKing(board, pos, f=False):
     return available_moves
 
 class AI():
-    def __init__(self, board, search_depth=6, team="w"):
-        self.board = board
-        self.strategy = 1               # Initial Strategy is Game Tree Search
+    def __init__(self, board, difficulty="medium", team="w"):
+    self.board = board
+    self.strategy = 1
 
-        '''
-        Evaluation settings
-        '''
-        self.w_moves = []
-        self.b_moves = []
-        self.pruned = 0
+    # 🎯 Difficulty settings
+    if difficulty == "easy":
+        self.ABSearch_Depth = 2
+        self.randomness = 0.3
+    elif difficulty == "medium":
+        self.ABSearch_Depth = 4
+        self.randomness = 0.1
+    else:  # hard
+        self.ABSearch_Depth = 6
+        self.randomness = 0.0
 
-        """
-        Alpha/Beta Search Options
-        """
-        self.ABSearch_Depth = search_depth
-        self.maximizer_team = team
-        if team == "w":
-            self.minimizer_team = "b"
-        else:
-            self.minimizer_team = "w"
-        self.chosen_move = ()
-        self.thread_lock = threading.Lock()
-        self.ab_lock = threading.Lock()
-        self.tt_lock = threading.Lock()
-        self.best_SearchTreeMoves = []
-        self.transposition_table = {}
-        self.transpositions = 0
-        self.explored_nodes = 0
-        self.depth_beta = {0: 99999, 1:99999, 2:99999, 3:99999,4:99999,5:99999,6:99999,7:99999,8:99999,9:99999, 10:99999, 11:99999}
-        self.depth_betac = {0: 99999, 1: 99999, 2: 99999, 3: 99999, 4: 99999, 5: 99999, 6: 99999, 7: 99999, 8: 99999,9: 99999, 10: 99999, 11: 99999}
-        self.depth_alpha = {0: -99999, 1:-99999, 2:-99999, 3:-99999,4:-99999,5:-99999,6:-99999,7:-99999,8:-99999, 9:-99999, 10:-99999, 11:-99999}
-        self.depth_alphac = {0: -99999, 1:-99999, 2:-99999, 3:-99999,4:-99999,5:-99999,6:-99999,7:-99999,8:-99999,9:-99999, 10:-99999, 11:-99999}
+    self.maximizer_team = team
+    self.minimizer_team = "b" if team == "w" else "w"
 
-        """
-        State Evaluation Hyperparameters
-        """
-        self.king_val =     10
-        self.queen_val =    8
-        self.rook_val =     5
-        self.bishop_val =   5
-        self.knight_val =   3
-        self.pawn_val =     1
-        self.scoreDict = {}
-        self.scoreDict["K"] = self.king_val
-        self.scoreDict["N"] = self.knight_val
-        self.scoreDict["p"] = self.pawn_val
-        self.scoreDict["R"] = self.rook_val
-        self.scoreDict["Q"] = self.queen_val
-        self.scoreDict["B"] = self.bishop_val
-        self.scoreDict[" "] = 0
+    self.chosen_move = ()
+    self.thread_lock = threading.Lock()
+    self.ab_lock = threading.Lock()
+    self.tt_lock = threading.Lock()
 
+    self.best_SearchTreeMoves = []
+    self.transposition_table = {}
+    self.transpositions = 0
+    self.explored_nodes = 0
+
+    self.depth_beta = {i: 99999 for i in range(12)}
+    self.depth_betac = {i: 99999 for i in range(12)}
+    self.depth_alpha = {i: -99999 for i in range(12)}
+    self.depth_alphac = {i: -99999 for i in range(12)}
+
+    # piece values
+    self.king_val = 10
+    self.queen_val = 8
+    self.rook_val = 5
+    self.bishop_val = 5
+    self.knight_val = 3
+    self.pawn_val = 1
+
+    self.scoreDict = {
+        "K": self.king_val,
+        "N": self.knight_val,
+        "p": self.pawn_val,
+        "R": self.rook_val,
+        "Q": self.queen_val,
+        "B": self.bishop_val,
+        " ": 0
+    }
     """
     Move retrieval and Evaluation Functions
     
@@ -288,8 +287,18 @@ class AI():
         return moves_dict, moves_list
 
     def MakeMove(self):
-        if self.strategy == 1:
-            return self.GameTreeSearch()
+    import random
+
+    # 🎲 Random move for easy mode
+    if random.random() < self.randomness:
+        moves_dict, moves_list = self.getMoves(self.board.board, self.maximizer_team)
+        if moves_list:
+            move = random.choice(moves_list)
+            for piece, moves in moves_dict.items():
+                if move in moves:
+                    return (piece, move)
+
+    return self.GameTreeSearch()
 
     def SimMovePiece(self, board, src, src_val, tgt, tgt_val):
         y,x = tgt
