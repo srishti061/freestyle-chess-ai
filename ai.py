@@ -301,25 +301,41 @@ class AI():
     Heuristic Evaluation Functions
     """
    
-    def evaluateBoard(self, board, checkmate, team):
-        if checkmate:
-            if team == self.maximizer_team:
-                return 100
-            else:
-                return -100
-        score = 0
-        found = 0
-        for m in range(len(board)):
-            for n in range(len(board[0])):
-                if board[m][n] != '  ':
-                    team = board[m][n][0]
-                    type = board[m][n][1]
-                    if team == self.minimizer_team:
-                        score -= self.getScore(board[m][n])
+   def evaluateBoard(self, board, checkmate, team):
+    if checkmate:
+        if team == self.maximizer_team:
+            return 100
+        else:
+            return -100
+
+    score = 0
+
+    for m in range(len(board)):
+        for n in range(len(board[0])):
+            if board[m][n] != '  ':
+                piece_team = board[m][n][0]
+                piece_type = board[m][n][1]
+
+                # 🔹 Material score
+                if piece_team == self.minimizer_team:
+                    score -= self.getScore(board[m][n])
+                else:
+                    score += self.getScore(board[m][n])
+
+                # 🔹 Center control bonus
+                if 2 <= m <= 5 and 2 <= n <= 5:
+                    if piece_team == self.maximizer_team:
+                        score += 0.2
                     else:
-                        score += self.getScore(board[m][n])
-                        found += 1
-        return  score 
+                        score -= 0.2
+
+    # 🔹 Mobility (number of moves)
+    my_moves = len(self.getMoves(board, self.maximizer_team)[1])
+    enemy_moves = len(self.getMoves(board, self.minimizer_team)[1])
+
+    score += 0.05 * (my_moves - enemy_moves)
+
+    return score
 
     def evaluateBoard1(board, checkmate, team, a: int, b: int):
         pass
