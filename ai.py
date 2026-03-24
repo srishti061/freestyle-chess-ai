@@ -7,7 +7,7 @@ import time
 import mmh3
 import numpy as np
 import pygame as p
-import ml 
+#import ml 
 def MoveEvalFunc(board, move, score_dict, enemy_moves, pos):
     y, x = move
     score = 0
@@ -322,7 +322,7 @@ class AI():
         return  score 
 
     def evaluateBoard1(board, checkmate, team, a: int, b: int):
-        return evaluateBoard(board, checkmate, team)*0.2 + MLAI.predict_function(board) * 0.8
+        #return evaluateBoard(board, checkmate, team)*0.2 + MLAI.predict_function(board) * 0.8
     """
     Wrapper function for retrieving scores
     """
