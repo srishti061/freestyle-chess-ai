@@ -5,6 +5,7 @@ import tensorflow as tf
 from tensorflow.keras import layers, models
 import zstandard as zstd
 import io
+from tensorflow.keras.models import load_model
 
 
 def load_games(pgn_path, num_games=10000):
@@ -119,15 +120,23 @@ class MLAI:
 
 
 if __name__ == "__main__":
+    import os
+
     games = load_games("lichess.pgn.zst")
     move_lookup = create_move_lookup(games)
-
-    model = create_model((8, 8, 12), len(move_lookup))
     generator = ChessDataGenerator(games, move_lookup)
 
-    print("Training the model...")
-    model.fit(generator, epochs=10)
+    if os.path.exists("chess_model.h5"):
+        print("Loading existing model...")
+        model = load_model("chess_model.h5")
+    else:
+        print("Training new model...")
+        model = create_model((8, 8, 12), len(move_lookup))
+        model.fit(generator, epochs=10)
+        model.save("chess_model.h5")
+        print("Model saved successfully!")
 
+    # 👉 This should ALWAYS run (not inside else)
     ai = MLAI(model, move_lookup)
 
     board = chess.Board()
