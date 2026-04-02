@@ -110,7 +110,7 @@ class MLAI:
         move_probs = []
         for move in legal_moves:
             uci = move.uci()
-            if uci in self.move_lookup:
+            if self.move_lookup and uci in self.move_lookup:
                 idx = self.move_lookup[uci]
                 move_probs.append((move, predictions[idx]))
             else:
