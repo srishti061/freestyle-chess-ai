@@ -7,6 +7,9 @@ import time
 import mmh3
 import numpy as np
 import pygame as p
+from ml import MLAI, board_to_tensor
+from tensorflow.keras.models import load_model
+import chess
 
 
 # import ml
@@ -204,6 +207,30 @@ def ResolveMovesKing(board, pos, f=False):
     return available_moves
 
 
+def convert_to_chess_board(custom_board):
+    board = chess.Board(None)
+
+    piece_map = {
+        "p": chess.PAWN,
+        "R": chess.ROOK,
+        "N": chess.KNIGHT,
+        "B": chess.BISHOP,
+        "Q": chess.QUEEN,
+        "K": chess.KING,
+    }
+
+    for row in range(8):
+        for col in range(8):
+            cell = custom_board[row][col]
+            if cell != "  ":
+                color = chess.WHITE if cell[0] == "w" else chess.BLACK
+                piece_type = piece_map[cell[1]]
+                square = chess.square(col, row)
+                board.set_piece_at(square, chess.Piece(piece_type, color))
+
+    return board
+
+
 class AI:
     def __init__(self, board, difficulty="medium", team="w"):
         self.board = board
@@ -256,6 +283,10 @@ class AI:
             "B": self.bishop_val,
             " ": 0,
         }
+
+        # ML model
+        self.ml_model = load_model("chess_model.h5")
+        self.ml_ai = MLAI(self.ml_model, {})  # move_lookup not needed for now
 
     """
     Move retrieval and Evaluation Functions
@@ -363,6 +394,19 @@ class AI:
     def MakeMove(self):
         import random
 
+        # 🎯 Try ML first
+        try:
+            chess_board = convert_to_chess_board(self.board.board)
+            move = self.ml_ai.predict_move(chess_board)
+
+            if move:
+                src = (move.from_square // 8, move.from_square % 8)
+                tgt = (move.to_square // 8, move.to_square % 8)
+                return (src, tgt)
+        except Exception as e:
+            print("ML failed, using fallback:", e)
+
+        # 🎲 fallback random (optional)
         if random.random() < self.randomness:
             moves_dict, moves_list = self.getMoves(
                 self.board.board, self.maximizer_team
@@ -373,6 +417,7 @@ class AI:
                     if move in moves:
                         return (piece, move)
 
+        # 🧠 fallback to heuristic AI
         return self.GameTreeSearch()
 
     def SimMovePiece(self, board, src, src_val, tgt, tgt_val):
@@ -576,7 +621,7 @@ class AI:
             threads.append(ab_max_thread)
             ab_max_thread.start()
             self.ab_lock.release()
-            move[i] = (piece, p)
+            move[i] = (piece, moves_dict[piece])
             i += 1
         for thread in threads:
             thread.join()
