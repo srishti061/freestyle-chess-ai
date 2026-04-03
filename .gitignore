@@ -1,9 +1,9 @@
+build/
+dist/
 venv/
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-build/
-dist/ 
+*.spec
+*.h5
+*.onnx
+*.pkl
 lichess.pgn.zst
