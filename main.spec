@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets', 'assets'), ('data', 'data'), ('ml', 'ml'), ('chess_model.onnx', '.'), ('move_lookup.pkl', '.')],
+    datas=[('assets', 'assets'), ('data', 'data'), ('ml', 'ml'), ('chess_model.onnx', '.'), ('chess_model.h5', '.'), ('move_lookup.pkl', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
