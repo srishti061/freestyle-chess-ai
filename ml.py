@@ -1,11 +1,25 @@
 import chess
 import chess.pgn
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras import layers, models
-import zstandard as zstd
-import io
-from tensorflow.keras.models import load_model
+import random
+
+# TF only needed for training - not needed at runtime
+try:
+    import tensorflow as tf
+    from tensorflow.keras import layers, models
+    from tensorflow.keras.models import load_model
+
+    TF_AVAILABLE = True
+except:
+    TF_AVAILABLE = False
+
+try:
+    import zstandard as zstd
+    import io
+
+    ZSTD_AVAILABLE = True
+except:
+    ZSTD_AVAILABLE = False
 
 
 def load_games(pgn_path, num_games=10000):
@@ -14,7 +28,6 @@ def load_games(pgn_path, num_games=10000):
         dctx = zstd.ZstdDecompressor()
         stream_reader = dctx.stream_reader(compressed)
         text_stream = io.TextIOWrapper(stream_reader, encoding="utf-8")
-
         for _ in range(num_games):
             game = chess.pgn.read_game(text_stream)
             if game is None:
@@ -43,7 +56,6 @@ def board_to_tensor(board):
         chess.KING,
     ]
     tensor = np.zeros((8, 8, 12), dtype=np.float32)
-
     for square in chess.SQUARES:
         piece = board.piece_at(square)
         if piece:
@@ -54,6 +66,8 @@ def board_to_tensor(board):
 
 
 def create_model(input_shape, output_size):
+    if not TF_AVAILABLE:
+        raise RuntimeError("TensorFlow not available - cannot create model")
     model = models.Sequential(
         [
             layers.Conv2D(64, (3, 3), activation="relu", input_shape=input_shape),
@@ -63,38 +77,39 @@ def create_model(input_shape, output_size):
             layers.Dense(output_size, activation="softmax"),
         ]
     )
-
     model.compile(
         optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
     )
     return model
 
 
-class ChessDataGenerator(tf.keras.utils.Sequence):
-    def __init__(self, games, move_lookup, batch_size=32):
-        self.games = games
-        self.move_lookup = move_lookup
-        self.batch_size = batch_size
-        self.positions = []
+if TF_AVAILABLE:
 
-        for game in games:
-            board = game.board()
-            for move in game.mainline_moves():
-                self.positions.append((board.copy(), move))
-                board.push(move)
+    class ChessDataGenerator(tf.keras.utils.Sequence):
+        def __init__(self, games, move_lookup, batch_size=32):
+            self.games = games
+            self.move_lookup = move_lookup
+            self.batch_size = batch_size
+            self.positions = []
+            for game in games:
+                board = game.board()
+                for move in game.mainline_moves():
+                    self.positions.append((board.copy(), move))
+                    board.push(move)
 
-    def __len__(self):
-        return int(np.ceil(len(self.positions) / self.batch_size))
+        def __len__(self):
+            return int(np.ceil(len(self.positions) / self.batch_size))
 
-    def __getitem__(self, idx):
-        batch = self.positions[idx * self.batch_size : (idx + 1) * self.batch_size]
-        X = np.array([board_to_tensor(b) for b, _ in batch])
-        y = np.array([self.move_lookup[m.uci()] for _, m in batch])
-        return X, y
+        def __getitem__(self, idx):
+            batch = self.positions[idx * self.batch_size : (idx + 1) * self.batch_size]
+            X = np.array([board_to_tensor(b) for b, _ in batch])
+            y = np.array([self.move_lookup[m.uci()] for _, m in batch])
+            return X, y
 
 
 class MLAI:
     def __init__(self, model, move_lookup):
+        # model can be an OnnxModel wrapper or a Keras model - both expose .predict()
         self.model = model
         self.move_lookup = move_lookup
         self.reverse_lookup = {v: k for k, v in move_lookup.items()}
@@ -103,6 +118,9 @@ class MLAI:
         legal_moves = list(board.legal_moves)
         if not legal_moves:
             return None
+
+        if self.model is None:
+            return random.choice(legal_moves)
 
         input_tensor = board_to_tensor(board)
         predictions = self.model.predict(np.expand_dims(input_tensor, 0))[0]
@@ -124,19 +142,23 @@ if __name__ == "__main__":
 
     games = load_games("lichess.pgn.zst")
     move_lookup = create_move_lookup(games)
-    generator = ChessDataGenerator(games, move_lookup)
+    if TF_AVAILABLE:
+        generator = ChessDataGenerator(games, move_lookup)
+    else:
+        generator = None
 
-    if os.path.exists("chess_model.h5"):
+    if os.path.exists("chess_model.h5") and TF_AVAILABLE:
         print("Loading existing model...")
         model = load_model("chess_model.h5")
-    else:
+    elif TF_AVAILABLE:
         print("Training new model...")
         model = create_model((8, 8, 12), len(move_lookup))
         model.fit(generator, epochs=10)
         model.save("chess_model.h5")
         print("Model saved successfully!")
+    else:
+        model = None
 
-    # 👉 This should ALWAYS run (not inside else)
     ai = MLAI(model, move_lookup)
 
     board = chess.Board()
@@ -149,3 +171,8 @@ if __name__ == "__main__":
 
     print("Game Over")
     print(f"Result: {board.result()}")
+
+    import pickle
+
+    with open("move_lookup.pkl", "wb") as f:
+        pickle.dump(move_lookup, f)

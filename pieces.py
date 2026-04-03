@@ -1,16 +1,14 @@
+import sys
+import os
 import pygame as p
 import numpy as np
 
-"""
-PIECE CLASSES --> ONLY USED INTERNAL TO THE BOARD CLASS
-"""
 
-
-"""
-SWITCH MOVES IN BOARD TO USING A DICTIONARY FORMAT, IT IS MUCH BETTER THAN THE CURRENT
-
-
-"""
+def resource_path(relative_path):
+    """Get absolute path to resource - works for dev and PyInstaller bundle."""
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 
 class Piece:
@@ -101,12 +99,13 @@ class Pawn(Piece):
     def __init__(self, y, x, team, board, screen):
         super().__init__(y, x, team, board, screen)
         self.start = True
+        img_path = resource_path(os.path.join("assets", self.team + f"{self.type}.png"))
         self.image = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.board.sq_size, self.board.sq_size),
         )
         self.icon = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.icon_size, self.icon_size),
         )
         if self.team == "b":
@@ -231,12 +230,13 @@ class Knight(Piece):
 
     def __init__(self, y, x, team, board, screen):
         super().__init__(y, x, team, board, screen)
+        img_path = resource_path(os.path.join("assets", self.team + f"{self.type}.png"))
         self.image = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.board.sq_size, self.board.sq_size),
         )
         self.icon = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.icon_size, self.icon_size),
         )
 
@@ -266,12 +266,13 @@ class King(Piece):
 
     def __init__(self, y, x, team, board, screen):
         super().__init__(y, x, team, board, screen)
+        img_path = resource_path(os.path.join("assets", self.team + f"{self.type}.png"))
         self.image = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.board.sq_size, self.board.sq_size),
         )
         self.icon = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.icon_size, self.icon_size),
         )
 
@@ -282,7 +283,6 @@ class King(Piece):
             x, y = d
             n = self.pos[1] + x
             m = self.pos[0] + y
-
             if (
                 m < 8
                 and n < 8
@@ -294,7 +294,6 @@ class King(Piece):
                 )
             ):
                 self.available_moves.append((m, n))
-        # print(self.available_moves)
         return self.available_moves
 
     def setKingLocation(self):
@@ -334,12 +333,13 @@ class Rook(Piece):
 
     def __init__(self, y, x, team, board, screen):
         super().__init__(y, x, team, board, screen)
+        img_path = resource_path(os.path.join("assets", self.team + f"{self.type}.png"))
         self.image = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.board.sq_size, self.board.sq_size),
         )
         self.icon = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.icon_size, self.icon_size),
         )
 
@@ -367,12 +367,13 @@ class Queen(Piece):
 
     def __init__(self, y, x, team, board, screen):
         super().__init__(y, x, team, board, screen)
+        img_path = resource_path(os.path.join("assets", self.team + f"{self.type}.png"))
         self.image = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.board.sq_size, self.board.sq_size),
         )
         self.icon = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.icon_size, self.icon_size),
         )
 
@@ -400,12 +401,13 @@ class Bishop(Piece):
 
     def __init__(self, y, x, team, board, screen):
         super().__init__(y, x, team, board, screen)
+        img_path = resource_path(os.path.join("assets", self.team + f"{self.type}.png"))
         self.image = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.board.sq_size, self.board.sq_size),
         )
         self.icon = p.transform.scale(
-            p.image.load("assets/" + self.team + f"{self.type}.png"),
+            p.image.load(img_path),
             (self.icon_size, self.icon_size),
         )
 
@@ -416,7 +418,6 @@ class Bishop(Piece):
             x, y = d
             n = self.pos[1] + x
             m = self.pos[0] + y
-
             while (
                 m < 8 and n < 8 and m >= 0 and n >= 0 and self.board.board[m][n] == "  "
             ):
