@@ -6,4 +6,4 @@ __pycache__/
 *.h5
 *.onnx
 *.pkl
-lichess.pgn.zst
+lichess.pgn
