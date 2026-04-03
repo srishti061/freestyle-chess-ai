@@ -3,5 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.h5
-*.zst
+
+build/
+dist/ 
+lichess.pgn.zst
