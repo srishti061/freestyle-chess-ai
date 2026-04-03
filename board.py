@@ -44,13 +44,18 @@ class Board:
     black_captured = []
     blackKing_Location = ()
 
+    winner = None  # None | "White" | "Black"
+
     def __init__(self, pyg, screen):
         self.pygame = pyg
         self.screen = screen
         self.entities = []
         self.piece_lookup = {}
+        self.winner = None
         self.setting_font = self.pygame.font.SysFont("Times New Roman", 25)
         self.message_font = self.pygame.font.SysFont("Times New Roman", 15)
+        self.win_font = self.pygame.font.SysFont("Times New Roman", 52, bold=True)
+        self.sub_font = self.pygame.font.SysFont("Times New Roman", 22)
 
         self.board = [
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
@@ -62,25 +67,6 @@ class Board:
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
         ]
-
-        """
-        TEST BOARD
-        
-        good board for testing checkmate
-        
-        
-        self.board = [
-    ["bR","bN","bB","bQ","bK","bB","bN","bR"],
-    ["bp","bp","bp","bp","bp","bp","bp","bp"],
-    ["  ","  ","  ","  ","  ","  ","  ","  "],
-    ["  ","  ","  ","  ","  ","  ","  ","  "],
-    ["  ","  ","  ","  ","  ","  ","  ","  "],
-    ["  ","  ","  ","  ","  ","  ","  ","  "],
-    ["wp","wp","wp","wp","wp","wp","wp","wp"],
-    ["wR","wN","wB","wQ","wK","wB","wN","wR"],
-        ]
-        
-        """
 
         self.ai = AI(self, difficulty="medium")
         self.text_location = (
@@ -96,7 +82,6 @@ class Board:
         ]
         self.loading_texts_index = 0
 
-        # Spawn piece entities
         for i in range(8):
             for j in range(8):
                 pos = self.board[i][j]
@@ -131,15 +116,7 @@ class Board:
 
         self.checkGameState()
 
-    """
-    AI CONTROL WRAPPERS
-    
-    
-    Need to add the Game Over check again
-    """
-
     def AI_MakeMove(self):
-
         while True:
             piece_loc, move = self.ai.MakeMove()
             piece = self.piece_lookup[piece_loc]
@@ -150,10 +127,6 @@ class Board:
                 break
             else:
                 print(piece.pos, "->", move, piece.type)
-
-    """
-    GAME STATE FUNCTIONS
-    """
 
     def setAIThinking(self):
         self.ai_thinking = not self.ai_thinking
@@ -188,15 +161,6 @@ class Board:
             else:
                 self.white_moves[e.pos] = e.getMoves()
 
-    """
-
-       checkMoveFilter() will do the following:
-       1. See if the current player is currently in check
-       2. If so, we test every one of our possible moves and see if it will get us out of check
-       3. If it will we keep that move, if not we will discard it
-
-       """
-
     def checkMoveFilter(
         self, board, curr_team, currMoves, enemy_team, enemyMoves, king_loc
     ):
@@ -210,7 +174,6 @@ class Board:
                 tgt_y, tgt_x = move
                 tgt_val = board[tgt_y][tgt_x]
                 if (src_y, src_x) == king_loc:
-                    # print("found")
                     king_loc = move
                 self.SimMovePiece(board, src, "  ", move, src_val)
                 m_dict, next_turnEnemyMoves = self.ai.getMoves(
@@ -242,17 +205,15 @@ class Board:
     def checkGameOver(self):
         if self.checkGameState():
             if len(self.white_moves) == 0:
-                print("BLACK WINS!")
-                sys.exit()
+                self.winner = "Black"
             elif len(self.black_moves) == 0:
-                print("WHITE WINS!")
-                sys.exit()
-
-    """
-    User Control/GUI Functions
-    """
+                self.winner = "White"
 
     def select(self, pos):
+        # Block input if game is over
+        if self.winner:
+            return
+
         x, y = pos
         y = int((y - (y % self.sq_size)) / self.sq_size)
         x = int((x - (x % self.sq_size)) / self.sq_size)
@@ -262,7 +223,6 @@ class Board:
                 self.selected = (y, x)
                 piece = self.piece_lookup[(y, x)]
                 self.valid_moves = piece.getMoves()
-
         else:
             piece = self.piece_lookup[self.selected]
 
@@ -280,10 +240,6 @@ class Board:
             self.selected = None
             self.valid_moves = []
 
-    """
-    Graphics/Draw Functions
-    """
-
     def drawAccessoryTexts(self):
         if self.ai_thinking:
             load_text = self.message_font.render(
@@ -294,29 +250,45 @@ class Board:
             self.screen.blit(load_text, self.text_location)
 
     def drawSelected(self):
-        # 🟡 selected square
         if self.selected:
             y, x = self.selected
             y_pix = y * self.sq_size
             x_pix = x * self.sq_size
-
             selection_surface = self.pygame.Surface(
                 (self.sq_size, self.sq_size), self.pygame.SRCALPHA
             )
             selection_surface.fill(self.select_c3)
             self.screen.blit(selection_surface, (x_pix, y_pix))
 
-        # 🟢 valid moves
         for move in self.valid_moves:
             y, x = move
             y_pix = y * self.sq_size
             x_pix = x * self.sq_size
-
             move_surface = self.pygame.Surface(
                 (self.sq_size, self.sq_size), self.pygame.SRCALPHA
             )
             move_surface.fill((0, 255, 0, 100))
             self.screen.blit(move_surface, (x_pix, y_pix))
+
+    def drawWinOverlay(self):
+        """Draw a centered overlay showing who won."""
+        board_w = self.sq_size * 8
+        board_h = self.sq_size * 8
+
+        overlay = self.pygame.Surface((board_w, board_h), self.pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
+        self.screen.blit(overlay, (0, 0))
+
+        win_text = self.win_font.render(f"{self.winner} Wins!", True, (255, 215, 0))
+        sub_text = self.sub_font.render(
+            "Checkmate  •  Close window to exit", True, (220, 220, 220)
+        )
+
+        win_rect = win_text.get_rect(center=(board_w // 2, board_h // 2 - 20))
+        sub_rect = sub_text.get_rect(center=(board_w // 2, board_h // 2 + 40))
+
+        self.screen.blit(win_text, win_rect)
+        self.screen.blit(sub_text, sub_rect)
 
     def draw_Board(self):
         for i in range(8):
@@ -331,6 +303,9 @@ class Board:
         for e in self.entities:
             e.draw()
 
+        if self.winner:
+            self.drawWinOverlay()
+
     def drawSettings(self):
         offset_x = self.sq_size * 8
         self.pygame.draw.rect(
@@ -338,6 +313,31 @@ class Board:
             self.pygame.Color("gray"),
             self.pygame.Rect(offset_x, 0, self.settings_width, self.sq_size * 8),
         )
+
+        # ── Turn indicator ──────────────────────────────────────────────────
+        if self.winner:
+            turn_str = f"{self.winner} Wins!"
+            turn_color = (180, 0, 0)
+        elif self.white_turn:
+            turn_str = "AI thinking..." if self.ai_thinking else "AI's turn"
+            turn_color = (0, 0, 160)
+        else:
+            turn_str = "Your turn"
+            turn_color = (0, 120, 0)
+
+        turn_label = self.message_font.render(turn_str, True, turn_color)
+        self.screen.blit(turn_label, (offset_x + 10, 10))
+
+        # Divider line
+        self.pygame.draw.line(
+            self.screen,
+            (100, 100, 100),
+            (offset_x + 5, 32),
+            (offset_x + self.settings_width - 5, 32),
+            1,
+        )
+
+        # Captured pieces labels
         white_pt_label = self.setting_font.render("White:", False, (0, 0, 0))
         black_pt_label = self.setting_font.render("Black:", False, (0, 0, 0))
         self.screen.blit(white_pt_label, (offset_x + 10, (self.sq_size * 8) / 8))

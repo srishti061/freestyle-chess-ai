@@ -113,44 +113,17 @@ class Pawn(Piece):
         else:
             self.direction = 0
 
-    def getBestCaptured(self):
-        best = "  "
-        best_score = 0
-        if self.team == "w":
-            for cp in self.board.black_captured:
-                score = self.board.ai.getScore(cp.team + cp.type)
-                if score > best_score:
-                    best = cp
-                    best_score = 0
-        else:
-            for cp in self.board.white_captured:
-                score = self.board.ai.getScore(cp.team + cp.type)
-                if score > best_score:
-                    best = cp
-                    best_score = 0
-        return best
-
-    def replace_White(self):
-        replacement = self.getBestCaptured()
-        replacement.pos = self.pos
-        self.board.black_captured.remove(replacement)
-        self.board.black_captured.append(self)
-        self.board.entities.remove(self)
-        self.board.entities.append(replacement)
-
-    def replace_Black(self):
-        replacement = self.getBestCaptured()
-        replacement.pos = self.pos
-        self.board.white_captured.remove(replacement)
-        self.board.white_captured.append(self)
-        self.board.entities.remove(self)
-        self.board.entities.append(replacement)
-
     def checkUpgrade(self):
-        if self.team == "w" and self.pos[0] == 7:
-            self.replace_White()
-        elif self.team == "b" and self.pos[0] == 0:
-            self.replace_Black()
+        y, x = self.pos
+        # White pawns promote on row 7, black pawns on row 0
+        if (self.team == "w" and y == 7) or (self.team == "b" and y == 0):
+            # Spawn a Queen in place of this pawn
+            queen = Queen(y, x, self.team, self.board, self.screen)
+            queen.pos = self.pos
+            self.board.piece_lookup[self.pos] = queen
+            self.board.entities.remove(self)
+            self.board.entities.append(queen)
+            self.board.board[y][x] = f"{self.team}Q"
 
     def getMoves(self):
         d1 = []
