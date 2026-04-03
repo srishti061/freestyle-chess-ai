@@ -18,6 +18,9 @@ AI_THINKING_LOCK = threading.Lock()
 
 
 def ai_moveThread():
+    # Don't trigger AI if game is over
+    if b.winner:
+        return
     if b.white_turn and not b.ai_thinking:
         if AI_THINKING_LOCK.acquire(blocking=False):
             b.setAIThinking()
@@ -32,7 +35,8 @@ def GameLoop():
 
     for e in p.event.get():
         if e.type == p.QUIT:
-            break
+            p.quit()
+            sys.exit()
         elif e.type == p.MOUSEBUTTONDOWN:
             location = p.mouse.get_pos()
             b.select(location)
